@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ToDoify — Animated To‑Do App</title>
+  <style>
+    /* RESET */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;
+      background: linear-gradient(180deg,#0f1724 0%, #071022 60%);
+      color:#e6eef8; -webkit-font-smoothing:antialiased;
+      padding:28px; display:flex; align-items:flex-start; justify-content:center; gap:24px;
+    }
+
+    /* APP SHELL */
+    .app{
+      width:1100px; max-width:calc(100% - 48px);
+      display:grid; grid-template-columns:320px 1fr; gap:22px;
+    }
+
+    /* SIDEBAR */
+    .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:18px; border-radius:14px; box-shadow:0 6px 30px rgba(2,6,23,0.6); min-height:520px;
+      backdrop-filter: blur(6px);
+    }
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .logo{
+      width:46px;height:46px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#7c3aed,#06b6d4);box-shadow:0 6px 18px rgba(124,58,237,0.18);
+      transform:rotate(-10deg);
+    }
+    .logo svg{filter:drop-shadow(0 6px 18px rgba(12,10,40,0.5));}
+    .brand h1{font-size:18px;letter-spacing:0.2px}
+    .brand p{font-size:12px;color:rgba(230,238,248,0.7)}
+
+    .lists{margin-top:12px}
+    .list-item{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:10px;cursor:pointer;transition:all .18s ease; margin-bottom:8px}
+    .list-item:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(2,6,23,0.6)}
+    .list-item.active{background:linear-gradient(90deg, rgba(124,58,237,0.12), rgba(6,182,212,0.06));border:1px solid rgba(124,58,237,0.12)}
+    .list-name{display:flex;gap:10px;align-items:center}
+
+    .new-list{display:flex;gap:8px;margin-top:12px}
+    .new-list input{flex:1;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .new-list button{padding:10px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,#7c3aed,#06b6d4);color:white;font-weight:600;cursor:pointer}
+
+    .meta{margin-top:18px;font-size:13px;color:rgba(230,238,248,0.7)}
+
+    /* MAIN */
+    .main{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:20px;border-radius:14px; min-height:520px; box-shadow:0 6px 30px rgba(2,6,23,0.6); backdrop-filter: blur(6px);}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .search{flex:1;display:flex;gap:10px;align-items:center}
+    .search input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .controls{display:flex;gap:8px}
+    .controls button{padding:10px 12px;border-radius:10px;border:0;background:rgba(255,255,255,0.03);color:inherit;cursor:pointer}
+
+    .add-task{display:flex;gap:10px;margin-top:18px;align-items:center}
+    .add-task input[type="text"]{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .add-task input[type="datetime-local"]{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .add-task button{padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,#7c3aed,#06b6d4);color:white;font-weight:700;cursor:pointer}
+
+    .board{margin-top:18px}
+    .task{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0)); transition:all .18s cubic-bezier(.2,.9,.2,1);}
+    .task.dragging{opacity:0.6;transform:scale(0.995)}
+    .task .left{display:flex;gap:12px;align-items:center;flex:1}
+    .checkbox{width:18px;height:18px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);display:grid;place-items:center;cursor:pointer}
+    .checkbox.checked{background:linear-gradient(90deg,#7c3aed,#06b6d4);border:0}
+    .title{font-weight:600}
+    .meta-label{font-size:12px;color:rgba(230,238,248,0.6)}
+    .task .right{display:flex;gap:10px;align-items:center}
+    .pill{padding:6px 8px;border-radius:8px;font-size:12px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02)}
+
+    .empty{padding:36px;border-radius:12px;border:1px dashed rgba(255,255,255,0.04);text-align:center;color:rgba(230,238,248,0.55)}
+
+    /* animations */
+    .fade-in{animation:fadeIn .36s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    .small{font-size:13px}
+
+    /* edit modal */
+    .modal{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(2,6,23,0.6),rgba(2,6,23,0.8));backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:all .18s}
+    .modal.show{opacity:1;pointer-events:auto}
+    .modal-card{width:520px;background:linear-gradient(180deg,#071022,#0b1220);border-radius:12px;padding:18px;box-shadow:0 14px 60px rgba(2,6,23,0.8)}
+    .modal-card input, .modal-card textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+
+    /* responsive */
+    @media (max-width:900px){
+      .app{grid-template-columns:1fr;}
+      .sidebar{order:2}
+      .main{order:1}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar fade-in">
+      <div class="brand">
+        <div class="logo" aria-hidden>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h18" stroke="white" stroke-opacity="0.9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6h10" stroke="white" stroke-opacity="0.6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <h1>ToDoify</h1>
+          <p>Organize tasks • animated • local</p>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>Your lists</strong>
+          <small class="small">drag to reorder</small>
+        </div>
+        <div class="lists" id="lists"></div>
+
+        <div class="new-list">
+          <input id="newListInput" placeholder="Create new list (eg: Work)" />
+          <button id="createListBtn">+ Add</button>
+        </div>
+
+        <div class="meta" style="margin-top:18px">
+          <div>Tasks: <span id="totalCount">0</span></div>
+          <div>Completed: <span id="doneCount">0</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main fade-in">
+      <div class="top">
+        <div style="display:flex;flex-direction:column;">
+          <h2 id="currentListTitle">All Tasks</h2>
+          <div class="small meta-label" id="currentListDesc">All lists combined</div>
+        </div>
+        <div class="controls">
+          <button id="filterAll">All</button>
+          <button id="filterActive">Active</button>
+          <button id="filterComplete">Completed</button>
+          <button id="clearCompleted">Clear Completed</button>
+        </div>
+      </div>
+
+      <div class="add-task">
+        <input id="taskInput" placeholder="Add a new task..." />
+        <input id="taskDate" type="datetime-local" />
+        <button id="addTaskBtn">Add</button>
+      </div>
+
+      <div class="board" id="board"></div>
+    </main>
+  </div>
+
+  <!-- edit modal -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <h3>Edit task</h3>
+      <div style="height:12px"></div>
+      <input id="editTitle" />
+      <div style="height:8px"></div>
+      <textarea id="editNotes" rows="4" placeholder="Notes (optional)"></textarea>
+      <div style="height:8px"></div>
+      <input id="editDate" type="datetime-local" />
+      <div style="height:14px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="deleteTaskBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px;cursor:pointer">Delete</button>
+        <button id="saveEditBtn" style="background:linear-gradient(90deg,#7c3aed,#06b6d4);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basic state and persistence
+    const LS_KEY = 'todoify_v1';
+    let state = { lists: [], activeListId: null, filter: 'all' };
+
+    // Utils
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    const save = () => localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const load = () => JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+
+    // Elements
+    const listsEl = document.getElementById('lists');
+    const createListBtn = document.getElementById('createListBtn');
+    const newListInput = document.getElementById('newListInput');
+    const board = document.getElementById('board');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const taskInput = document.getElementById('taskInput');
+    const taskDate = document.getElementById('taskDate');
+    const currentListTitle = document.getElementById('currentListTitle');
+    const currentListDesc = document.getElementById('currentListDesc');
+    const totalCountEl = document.getElementById('totalCount');
+    const doneCountEl = document.getElementById('doneCount');
+    const filterAll = document.getElementById('filterAll');
+    const filterActive = document.getElementById('filterActive');
+    const filterComplete = document.getElementById('filterComplete');
+    const clearCompletedBtn = document.getElementById('clearCompleted');
+
+    const modal = document.getElementById('modal');
+    const editTitle = document.getElementById('editTitle');
+    const editNotes = document.getElementById('editNotes');
+    const editDate = document.getElementById('editDate');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    const deleteTaskBtn = document.getElementById('deleteTaskBtn');
+
+    // initialize
+    (function init(){
+      const saved = load();
+      if(saved) state = saved;
+      if(!state.lists.length){
+        const inboxId = uid();
+        state.lists.push({ id: inboxId, name: 'Inbox', tasks: [], color:'#7c3aed' });
+        const workId = uid();
+        state.lists.push({ id: workId, name: 'Work', tasks: [], color:'#06b6d4' });
+        state.activeListId = inboxId;
+        save();
+      }
+      renderLists();
+      renderBoard();
+    })();
+
+    // List operations
+    function createList(name){
+      const id = uid();
+      state.lists.push({ id, name: name||'New list', tasks: [], color:'#'+Math.floor(Math.random()*16777215).toString(16) });
+      state.activeListId = id;
+      save(); renderLists(); renderBoard();
+    }
+
+    createListBtn.addEventListener('click', ()=>{
+      const name = newListInput.value.trim(); if(!name) return; createList(name); newListInput.value='';
+    });
+    newListInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ createListBtn.click(); }});
+
+    function renderLists(){
+      listsEl.innerHTML='';
+      state.lists.forEach(list=>{
+        const el = document.createElement('div'); el.className='list-item'+(list.id===state.activeListId? ' active':''); el.dataset.id=list.id;
+        el.innerHTML = `
+          <div class="list-name">
+            <div style="width:10px;height:10px;border-radius:4px;background:${list.color};opacity:0.95"></div>
+            <div><strong>${escapeHtml(list.name)}</strong><div class="small meta-label">${list.tasks.length} tasks</div></div>
+          </div>
+          <div class="small">⋮</div>
+        `;
+        el.addEventListener('click', ()=>{ state.activeListId=list.id; renderLists(); renderBoard(); });
+        // context menu for rename
+        el.addEventListener('dblclick', ()=>{ const newName = prompt('Rename list', list.name); if(newName!==null){ list.name = newName.trim()||list.name; save(); renderLists(); renderBoard(); }});
+        listsEl.appendChild(el);
+      });
+      totalCountEl.textContent = state.lists.reduce((s,l)=>s+l.tasks.length,0);
+      doneCountEl.textContent = state.lists.reduce((s,l)=>s+l.tasks.filter(t=>t.done).length,0);
+    }
+
+    // Board
+    function getActiveListOrAll(){
+      if(!state.activeListId) return { name:'All Tasks', tasks: state.lists.flatMap(l=>l.tasks) };
+      const l = state.lists.find(x=>x.id===state.activeListId);
+      if(!l) return { name:'All Tasks', tasks: state.lists.flatMap(l=>l.tasks) };
+      return l;
+    }
+
+    function renderBoard(){
+      const filter = state.filter || 'all';
+      const ctx = getActiveListOrAll();
+      currentListTitle.textContent = ctx.name || 'All Tasks';
+      currentListDesc.textContent = (state.activeListId? 'Tasks for this list' : 'All lists combined');
+
+      let tasks = Array.isArray(ctx.tasks)? [...ctx.tasks] : [];
+      if(filter==='active') tasks = tasks.filter(t=>!t.done);
+      if(filter==='complete') tasks = tasks.filter(t=>t.done);
+
+      board.innerHTML='';
+      if(!tasks.length){ board.innerHTML = '<div class="empty">No tasks — add one above ✨</div>'; return }
+
+      tasks.sort((a,b)=> (a.done - b.done) || ((a.due||'') > (b.due||'')?1:-1) );
+
+      tasks.forEach(task=>{
+        const el = document.createElement('div'); el.className='task'; el.draggable = true; el.dataset.id = task.id;
+        const dueLabel = task.due? new Date(task.due).toLocaleString() : '';
+        el.innerHTML = `
+          <div class="left">
+            <div class="checkbox ${task.done? 'checked':''}" data-action="toggle"></div>
+            <div>
+              <div class="title" data-action="title">${escapeHtml(task.title)}</div>
+              <div class="meta-label">${escapeHtml(task.notes||'')}${task.notes? ' • ':'' }${dueLabel? dueLabel: ''}</div>
+            </div>
+          </div>
+          <div class="right">
+            ${task.due && !task.done ? `<div class="pill">Due • ${relativeDue(task.due)}</div>`: ''}
+            <button data-action="edit" title="Edit">✎</button>
+            <button data-action="more" title="More">⋯</button>
+          </div>
+        `;
+
+        // events
+        el.querySelector('[data-action="toggle"]').addEventListener('click', ()=>{ toggleTask(task.id); });
+        el.querySelector('[data-action="edit"]').addEventListener('click', ()=>{ openEdit(task.id); });
+
+        // drag handlers
+        el.addEventListener('dragstart', e=>{ el.classList.add('dragging'); e.dataTransfer.setData('text/plain', task.id); });
+        el.addEventListener('dragend', e=>{ el.classList.remove('dragging'); save(); renderBoard(); });
+
+        board.appendChild(el);
+      });
+
+      // allow drop ordering within board if viewing a single list
+      if(state.activeListId){
+        board.addEventListener('dragover', e=> e.preventDefault());
+        board.addEventListener('drop', e=>{
+          const tId = e.dataTransfer.getData('text/plain');
+          const list = state.lists.find(l=>l.id===state.activeListId);
+          if(!list) return;
+          // find target index
+          const children = Array.from(board.querySelectorAll('.task'));
+          const dropIndex = children.findIndex(c=> c.contains(document.elementFromPoint(e.clientX,e.clientY)));
+          const movingIndex = list.tasks.findIndex(t=>t.id===tId);
+          if(movingIndex<0) return;
+          const [moving] = list.tasks.splice(movingIndex,1);
+          if(dropIndex===-1) list.tasks.push(moving); else list.tasks.splice(dropIndex,0,moving);
+          save(); renderBoard(); renderLists();
+        });
+      }
+
+      totalCountEl.textContent = state.lists.reduce((s,l)=>s+l.tasks.length,0);
+      doneCountEl.textContent = state.lists.reduce((s,l)=>s+l.tasks.filter(t=>t.done).length,0);
+    }
+
+    // task ops
+    function addTaskToActive(title, due, notes){
+      if(!title) return;
+      const task = { id: uid(), title, notes: notes||'', done:false, created: new Date().toISOString(), due: due||null };
+      if(state.activeListId){
+        const list = state.lists.find(l=>l.id===state.activeListId);
+        list.tasks.unshift(task);
+      } else {
+        // add to first list if no active
+        state.lists[0].tasks.unshift(task);
+      }
+      save(); renderLists(); renderBoard();
+    }
+    addTaskBtn.addEventListener('click', ()=>{ addTaskToActive(taskInput.value.trim(), taskDate.value||null); taskInput.value=''; taskDate.value=''; });
+    taskInput.addEventListener('keydown', e=>{ if(e.key==='Enter') addTaskBtn.click(); });
+
+    function toggleTask(taskId){
+      for(const l of state.lists){ const t = l.tasks.find(x=>x.id===taskId); if(t){ t.done = !t.done; save(); renderLists(); renderBoard(); return }}
+    }
+
+    // edit modal
+    let editing = null;
+    function openEdit(taskId){
+      for(const l of state.lists){ const t = l.tasks.find(x=>x.id===taskId); if(t){ editing={list:l,task:t}; editTitle.value=t.title; editNotes.value=t.notes||''; editDate.value = t.due? t.due.split(':00.')[0] : ''; modal.classList.add('show'); return }}
+    }
+    saveEditBtn.addEventListener('click', ()=>{
+      if(!editing) return; editing.task.title = editTitle.value.trim()||editing.task.title; editing.task.notes = editNotes.value; editing.task.due = editDate.value||null; save(); modal.classList.remove('show'); renderBoard(); renderLists(); editing=null;
+    });
+    deleteTaskBtn.addEventListener('click', ()=>{
+      if(!editing) return; if(!confirm('Delete this task?')) return; const list = editing.list; list.tasks = list.tasks.filter(t=>t.id!==editing.task.id); save(); modal.classList.remove('show'); renderBoard(); renderLists(); editing=null;
+    });
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('show'); });
+
+    // filters
+    filterAll.addEventListener('click', ()=>{ state.filter='all'; renderBoard(); });
+    filterActive.addEventListener('click', ()=>{ state.filter='active'; renderBoard(); });
+    filterComplete.addEventListener('click', ()=>{ state.filter='complete'; renderBoard(); });
+    clearCompletedBtn.addEventListener('click', ()=>{
+      if(!confirm('Clear all completed tasks in current view?')) return;
+      if(state.activeListId){ const l = state.lists.find(x=>x.id===state.activeListId); l.tasks = l.tasks.filter(t=>!t.done); }
+      else { state.lists.forEach(l=> l.tasks = l.tasks.filter(t=>!t.done)); }
+      save(); renderBoard(); renderLists();
+    });
+
+    // helpers
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+    function relativeDue(iso){ const d = new Date(iso); const now = new Date(); const diff = d - now; const abs = Math.abs(diff); const days = Math.round(abs / (1000*60*60*24)); if(Math.abs(diff) < 1000*60*60) return diff>0? 'in minutes':'just now'; if(diff>0) return days===0? 'today': days===1? 'tomorrow': 'in '+days+' days'; return days===0? 'today': days===1? 'yesterday': days+' days ago'; }
+
+    // small polish: keyboard shortcuts
+    window.addEventListener('keydown', e=>{
+      if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ e.preventDefault(); taskInput.focus(); }
+      if(e.key==='n' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); newListInput.focus(); }
+    });
+
+    // expose for debugging
+    window._state = state;
+  </script>
+</body>
+</html>
